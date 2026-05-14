@@ -65,5 +65,15 @@ export const aiDurationPredict = (data) => api.post('/ai/duration-predict', data
 export const aiProductRecommend = (data) => api.post('/ai/product-recommend', data);
 export const aiRebookSuggest = (data) => api.post('/ai/rebook-suggest', data);
 export const aiWaitlistOptimize = () => api.post('/ai/waitlist-optimize');
+export const aiRebookQueue = () => api.post('/ai/rebook-queue');
+export const aiReminderMessage = (data) => api.post('/ai/reminder-message', data);
+
+// Bookings extras
+export const getBookingsByDate = (date) => api.get(`/bookings/calendar/${date}`);
+export const submitBookingReview = (id, data) => api.post(`/bookings/${id}/review`, data);
+export const createBookingFromRecommendation = (data) => api.post('/bookings/from-recommendation', data);
+
+// Stylist commissions
+export const getStylistCommissions = (id, params) => api.get(`/stylists/${id}/commissions`, { params });
 
 export default api;

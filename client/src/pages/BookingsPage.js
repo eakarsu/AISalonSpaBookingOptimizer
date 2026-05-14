@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getBookings, getClients, getStylists, getServices, createBooking, updateBooking, deleteBooking } from '../services/api';
+import { getBookings, getClients, getStylists, getServices, createBooking, updateBooking, deleteBooking, submitBookingReview } from '../services/api';
 
 function BookingsPage() {
   const [bookings, setBookings] = useState([]);
@@ -9,6 +9,9 @@ function BookingsPage() {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [conflictError, setConflictError] = useState('');
+  const [reviewForm, setReviewForm] = useState({ rating: '', comment: '' });
+  const [reviewMsg, setReviewMsg] = useState('');
   const [form, setForm] = useState({ client_id: '', stylist_id: '', service_id: '', booking_date: '', start_time: '', end_time: '', status: 'confirmed', notes: '', total_price: '' });
 
   useEffect(() => {
@@ -22,7 +25,8 @@ function BookingsPage() {
 
   const loadData = async () => {
     const res = await getBookings();
-    setBookings(res.data);
+    // Handle paginated response { data: [...], pagination: {...} }
+    setBookings(Array.isArray(res.data) ? res.data : (res.data?.data || []));
   };
 
   const resetForm = () => {
@@ -33,14 +37,23 @@ function BookingsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editing) {
-      await updateBooking(editing.id, form);
-    } else {
-      await createBooking(form);
+    setConflictError('');
+    try {
+      if (editing) {
+        await updateBooking(editing.id, form);
+      } else {
+        await createBooking(form);
+      }
+      resetForm();
+      loadData();
+      setSelected(null);
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setConflictError(err.response.data.message || 'Booking conflict detected');
+      } else {
+        setConflictError(err.response?.data?.error || 'Failed to save booking');
+      }
     }
-    resetForm();
-    loadData();
-    setSelected(null);
   };
 
   const handleEdit = (item) => {
@@ -86,7 +99,40 @@ function BookingsPage() {
             <div className="detail-field"><label>Status</label><span className={`badge badge-${selected.status}`}>{selected.status}</span></div>
             <div className="detail-field"><label>Total Price</label><span>${selected.total_price}</span></div>
             <div className="detail-field" style={{ gridColumn: '1 / -1' }}><label>Notes</label><span>{selected.notes || 'N/A'}</span></div>
+            {selected.review_rating && (
+              <div className="detail-field" style={{ gridColumn: '1 / -1' }}>
+                <label>Review</label>
+                <span>{'★'.repeat(Math.round(selected.review_rating))} ({selected.review_rating}/5) — {selected.review_comment || ''}</span>
+              </div>
+            )}
           </div>
+
+          {/* Client Review Form */}
+          {!selected.review_rating && (
+            <div style={{ marginTop: '20px', padding: '16px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px' }}>
+              <h3 style={{ marginBottom: '12px', fontSize: '15px' }}>Submit Review</h3>
+              {reviewMsg && <div style={{ color: '#10b981', marginBottom: '8px', fontSize: '13px' }}>{reviewMsg}</div>}
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Rating (1-5)</label>
+                  <input type="number" min="1" max="5" value={reviewForm.rating} onChange={e => setReviewForm({ ...reviewForm, rating: e.target.value })} placeholder="1-5 stars" />
+                </div>
+                <div className="form-group">
+                  <label>Comment (optional)</label>
+                  <input type="text" value={reviewForm.comment} onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })} placeholder="Leave a comment..." />
+                </div>
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={async () => {
+                try {
+                  await submitBookingReview(selected.id, { rating: parseInt(reviewForm.rating), comment: reviewForm.comment });
+                  setReviewMsg('Review submitted! Stylist rating updated.');
+                  loadData();
+                } catch (err) {
+                  setReviewMsg(err.response?.data?.error || 'Failed to submit review');
+                }
+              }}>Submit Review</button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -160,6 +206,11 @@ function BookingsPage() {
                 <label>Notes</label>
                 <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
               </div>
+              {conflictError && (
+                <div style={{ background: '#fee2e2', border: '1px solid #ef4444', color: '#991b1b', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px' }}>
+                  ⚠️ {conflictError}
+                </div>
+              )}
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
                 <button type="submit" className="btn btn-primary">{editing ? 'Update' : 'Create'}</button>

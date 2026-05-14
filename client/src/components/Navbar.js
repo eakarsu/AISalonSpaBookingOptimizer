@@ -17,6 +17,9 @@ function Navbar({ user, onLogout }) {
         <Link to="/stylists" className={isActive('/stylists')}>Stylists</Link>
         <Link to="/services" className={isActive('/services')}>Services</Link>
         <Link to="/ai" className={isActive('/ai')}>AI</Link>
+        <Link to="/booking-calendar" className={isActive('/booking-calendar')}>Scheduler</Link>
+        <Link to="/commissions" className={isActive('/commissions')}>Commissions</Link>
+        <Link to="/rebook-queue" className={isActive('/rebook-queue')}>Rebook</Link>
         <div style={{ position: 'relative' }}>
           <button
             className="btn btn-secondary btn-sm"
@@ -53,6 +56,7 @@ function Navbar({ user, onLogout }) {
                 { path: '/memberships', label: 'Memberships' },
                 { path: '/suppliers', label: 'Suppliers' },
                 { path: '/payroll', label: 'Payroll' },
+                { path: '/reminders', label: 'SMS Reminders' },
               ].map(item => (
                 <Link
                   key={item.path}

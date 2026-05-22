@@ -502,4 +502,48 @@ router.post('/retail-recommend', async (req, res) => {
   }
 });
 
+// AI Commission Optimization v2 (body-driven, accepts caller-supplied stylists + policy)
+// NOTE: prior undocumented pass added DB-driven /commission-optimization above. This v2
+// variant matches the audit-pass-6 spec which accepts stylists in the request body.
+router.post('/commission-optimization-v2', async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(503).json({ error: 'AI is not configured. Set OPENROUTER_API_KEY to enable this feature.' });
+  }
+  try {
+    const stylists = Array.isArray(req.body?.stylists) ? req.body.stylists : [];
+    const policy_constraints = req.body?.policy_constraints || null;
+    const target_margin = req.body?.target_margin ?? null;
+    const systemPrompt = 'You are a salon compensation strategy AI. Given a roster of stylists with current rates, services, performance metrics, and tenure, recommend commission rate adjustments that respect policy constraints and target margin. Return ONLY valid JSON.';
+    const userPrompt = `Stylists:\n${JSON.stringify(stylists)}\n\nPolicy constraints:\n${JSON.stringify(policy_constraints)}\n\nTarget margin: ${target_margin}\n\nReturn JSON: {recommendations:[{stylist_id,current_rate,recommended_rate,delta_pct,rationale,expected_impact}], policy_alerts:[{stylist_id,constraint,issue}], summary}.`;
+    const aiText = await queryOpenRouter(systemPrompt, userPrompt);
+    let parsed;
+    try { parsed = parseAIJson(aiText); } catch (_) { parsed = { raw: aiText }; }
+    await persistAIResult('commission-optimization-v2', { stylist_count: stylists.length, policy_constraints, target_margin }, parsed, req.user?.id);
+    res.json(parsed && typeof parsed === 'object' ? parsed : { result: parsed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// AI Retail Recommend v2 (appointment-context driven — combines product-recommend with the booked service)
+// NOTE: prior undocumented pass added id-lookup /retail-recommend above. This v2 variant
+// matches the audit-pass-6 spec which accepts a full appointment object in the body.
+router.post('/retail-recommend-v2', async (req, res) => {
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(503).json({ error: 'AI is not configured. Set OPENROUTER_API_KEY to enable this feature.' });
+  }
+  try {
+    const appointment = req.body?.appointment || {};
+    const systemPrompt = 'You are a retail upsell AI for salons/spas. Given an appointment context (service, stylist, client history, products used during service), recommend retail products with fit scores, suggested upsells, and stylist talking points. Return ONLY valid JSON.';
+    const userPrompt = `Appointment context:\n${JSON.stringify(appointment)}\n\nReturn JSON: {retail_recommendations:[{product,category,fit_score,suggested_upsell,talking_point}], bundle_suggestion:{name,products:[],discount_pct,rationale}, expected_uplift}.`;
+    const aiText = await queryOpenRouter(systemPrompt, userPrompt);
+    let parsed;
+    try { parsed = parseAIJson(aiText); } catch (_) { parsed = { raw: aiText }; }
+    await persistAIResult('retail-recommend-v2', { appointment_keys: Object.keys(appointment) }, parsed, req.user?.id);
+    res.json(parsed && typeof parsed === 'object' ? parsed : { result: parsed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -52,8 +52,14 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.get('/me', authenticateToken, (req, res) => {
-  res.json({ user: req.user });
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id,name,email,role FROM users WHERE id=$1', [req.user.id]);
+    if (!result.rows[0]) return res.status(401).json({ error: 'Identity is no longer active' });
+    return res.json({ user: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

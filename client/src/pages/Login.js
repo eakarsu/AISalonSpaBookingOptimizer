@@ -61,7 +61,7 @@ function Login({ onLogin }) {
           onClick={fillCredentials}
           style={{ marginTop: '12px' }}
         >
-          Auto-fill Demo Credentials
+          Auto Fill Demo Credentials
         </button>
       </div>
     </div>

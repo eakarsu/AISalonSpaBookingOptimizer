@@ -35,6 +35,7 @@ import AppointmentConflictPage from './pages/AppointmentConflictPage';
 import CommissionOptimizationPage from './pages/CommissionOptimizationPage';
 import RetailRecommendPage from './pages/RetailRecommendPage';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 
 // === Batch 07 Gaps & Frontend Mounts ===
 import CfSmartServiceBundling from './pages/CfSmartServiceBundling';
@@ -88,8 +89,8 @@ function App() {
 
   return (
     <Router>
-      <div className="app">
-        <Navbar user={user} onLogout={handleLogout} />
+      <div className="app-shell">
+        <Sidebar user={user} onLogout={handleLogout} />
         <main className="main-content">
           <Routes>
         <Route path="/insights/timeline" element={<TimelineView />} />

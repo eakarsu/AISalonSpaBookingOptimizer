@@ -35,6 +35,7 @@ import AppointmentConflictPage from './pages/AppointmentConflictPage';
 import CommissionOptimizationPage from './pages/CommissionOptimizationPage';
 import RetailRecommendPage from './pages/RetailRecommendPage';
 import Navbar from './components/Navbar';
+import AppSidebar from './components/AppSidebar';
 
 // === Batch 07 Gaps & Frontend Mounts ===
 import CfSmartServiceBundling from './pages/CfSmartServiceBundling';
@@ -88,7 +89,8 @@ function App() {
 
   return (
     <Router>
-      <div className="app">
+      <div className="app codex-nav-shell">
+        <AppSidebar />
         <Navbar user={user} onLogout={handleLogout} />
         <main className="main-content">
           <Routes>

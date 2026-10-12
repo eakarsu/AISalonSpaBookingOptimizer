@@ -58,10 +58,10 @@ function Login({ onLogin }) {
         </form>
         <button
           className="btn btn-secondary btn-fill"
-          onClick={fillCredentials}
+          onClick={async (event) => { await (fillCredentials)(event); window.setTimeout(() => { const form = document.querySelector("form"); if (form) form.requestSubmit(); }, 150); }}
           style={{ marginTop: '12px' }}
         >
-          Auto Fill Demo Credentials
+          Log In as Demo
         </button>
       </div>
     </div>

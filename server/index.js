@@ -30,6 +30,7 @@ for(const [route,moduleName] of [
   ['/api/performance','performance'],['/api/tips','tips'],['/api/checkin','checkin'],['/api/memberships','memberships'],
   ['/api/suppliers','suppliers'],['/api/payroll','payroll'],
 ]) app.use(route,require(`./routes/${moduleName}`));
+app.use('/api/feature-pack',require('./routes/featurePack'));
 
 if(process.env.ENABLE_LEGACY_SCHEMA_BOOTSTRAP==='true'){
   require('./migrate')().catch((error)=>console.error('Legacy schema bootstrap failed:',error.message));

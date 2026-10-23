@@ -35,6 +35,7 @@ import AppointmentConflictPage from './pages/AppointmentConflictPage';
 import CommissionOptimizationPage from './pages/CommissionOptimizationPage';
 import RetailRecommendPage from './pages/RetailRecommendPage';
 import Navbar from './components/Navbar';
+import FeaturePackPanel from './components/FeaturePackPanel.jsx';
 import AppSidebar from './components/AppSidebar';
 
 // === Batch 07 Gaps & Frontend Mounts ===
@@ -95,6 +96,7 @@ function App() {
         <main className="main-content">
           <Routes>
         <Route path="/insights/timeline" element={<TimelineView />} />
+        <Route path="/feature-pack" element={<FeaturePackPanel />} />
         <Route path="/codex/custom-viz" element={<CodexCustomVizFeature />} />
         <Route path="/codex/operations" element={<CodexOperationsFeature />} />
 

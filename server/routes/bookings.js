@@ -6,7 +6,8 @@ const authMiddleware = require('../middleware/auth');
 // GET all bookings with pagination
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 20, stylist_id, client_id, status, date } = req.query;
+    const { page = 1, limit = 20, stylist_id, client_id, status, date, q, search } = req.query;
+    const term = q || search;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const conditions = [];
     const params = [];
@@ -16,9 +17,10 @@ router.get('/', async (req, res) => {
     if (client_id) { conditions.push(`b.client_id = $${idx++}`); params.push(client_id); }
     if (status) { conditions.push(`b.status = $${idx++}`); params.push(status); }
     if (date) { conditions.push(`b.booking_date = $${idx++}`); params.push(date); }
+    if (term) { conditions.push(`(c.name ILIKE $${idx} OR s.name ILIKE $${idx} OR sv.name ILIKE $${idx})`); idx++; params.push(`%${term}%`); }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const countResult = await pool.query(`SELECT COUNT(*) FROM bookings b ${where}`, params);
+    const countResult = await pool.query(`SELECT COUNT(*) FROM bookings b LEFT JOIN clients c ON b.client_id = c.id LEFT JOIN stylists s ON b.stylist_id = s.id LEFT JOIN services sv ON b.service_id = sv.id ${where}`, params);
     const total = parseInt(countResult.rows[0].count);
 
     const result = await pool.query(`
@@ -39,6 +41,17 @@ router.get('/', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET export (CSV/JSON)
+router.get('/export', async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT b.*, c.name as client_name, s.name as stylist_name, sv.name as service_name FROM bookings b LEFT JOIN clients c ON b.client_id = c.id LEFT JOIN stylists s ON b.stylist_id = s.id LEFT JOIN services sv ON b.service_id = sv.id ORDER BY b.booking_date DESC`);
+    const { filterRecords, toCSV } = require('../featurePack');
+    const rows = filterRecords(result.rows, req.query);
+    if (String(req.query.format||'json').toLowerCase()==='csv') { res.setHeader('Content-Type','text/csv'); res.setHeader('Content-Disposition','attachment; filename="bookings.csv"'); return res.send(toCSV(rows)); }
+    res.setHeader('Content-Disposition','attachment; filename="bookings.json"'); return res.json({ exportedAt:new Date().toISOString(), count:rows.length, records:rows });
+  } catch (err) { return res.status(500).json({ error: err.message }); }
 });
 
 // GET calendar view by date
